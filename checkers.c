@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 enum { EMPTY, BLACK, WHITE, BLACK_KING, WHITE_KING };
 char pieces[] = {' ', 'b', 'w', 'B', 'W' };
@@ -49,7 +51,103 @@ void board_display(int indentation) {
   }
 }
 
+bool valid_move(int x1, int y1, int x2, int y2) {
+  if(x1 < 0 || x1 > 7 || y1 < 0 || y1 > 7) return false;
+  if(x2 < 0 || x2 > 7 || y2 < 0 || y2 > 7) return false;
+  if(abs(x1-x2) != abs(y1-y2)) return false;
+  if(board[y1][x1] == EMPTY) return false;
+
+  int distance = abs(x1-x2);
+  if(distance != 1 && distance != 2) return false;
+
+  int piece = board[y1][x1];
+  if(piece == WHITE && y2 < y1) return false;
+  if(piece == BLACK && y2 > y1) return false;
+
+  if(distance == 2) {
+    if(
+        piece == WHITE &&
+        board[y2][x2] != EMPTY &&
+        board[(y1+y2)/2][(x1+x2)/2] != BLACK
+      ) {
+      return false;
+    }
+
+    if(
+        piece == BLACK &&
+        board[y2][x2] != EMPTY &&
+        board[(y1+y2)/2][(x1+x2)/2] != WHITE
+      ) {
+      return false;
+    }
+  } else {
+    if(board[y2][x2] != EMPTY) return false;
+  }
+
+  return true;
+}
+
+void move(int x1, int y1, int x2, int y2) {
+  board[y2][x2] = board[y1][x1];
+  board[y1][x1] = EMPTY;
+  if(abs(x1-x2) == 2)
+    board[(y2+y1)/2][(x2+x1)/2] = EMPTY;
+}
+
+char *getinput(FILE *f) {
+  static char *buf = NULL;
+  static int buflen = 0;
+
+  if(buf == NULL) {
+    buf = malloc(16);
+    buflen = 16;
+  }
+
+  char *p = buf;
+  int len = buflen;
+  while(1) {
+    int c = fgetc(f);
+    if(c == EOF || c == '\n') {
+      *p = 0;
+      break;
+    }
+
+    if(len <= 0) {
+      len = buflen;
+      buflen *= 2;
+      buf = realloc(buf, buflen);
+      p = buf + len;
+    }
+
+    *p++ = c;
+    len--;
+  }
+
+  return buf;
+}
+
 int main(int argc, char *argv[]) {
   board_init();
-  board_display(8);
+
+  while(1) {
+    board_display(8);
+    printf("> ");
+
+    int x1, x2, y1, y2;
+    char *line = getinput(stdin);
+    if(sscanf(line, "%d,%d %d,%d", &x1, &y1, &x2, &y2) != 4)
+      continue;
+
+    x1--;
+    y1--;
+    x2--;
+    y2--;
+
+    if(!valid_move(x1, y1, x2, y2)) {
+      printf("Invalid move\n");
+      continue;
+    }
+
+    move(x1, y1, x2, y2);    
+  }
 }
