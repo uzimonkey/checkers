@@ -8,6 +8,7 @@ enum { EMPTY, BLACK, WHITE, BLACK_KING, WHITE_KING };
 char pieces[] = {' ', 'b', 'w', 'B', 'W' };
 int board[8][8];
 
+// Initialize board and place starting pieces
 void board_init() {
   memset(&board, EMPTY, 8*8);
 
@@ -21,18 +22,16 @@ void board_init() {
   }
 }
 
-void indent(int identation) {
-  while(identation--) printf(" ");
-}
-
+// Print indented string
 void printf_indented(int indentation, const char *fmt, ...) {
-  indent(indentation);
+  while(indentation--) printf(" ");
 
   va_list args;
   va_start(args, fmt);
   vprintf(fmt, args);
 }
 
+// Display the board
 void board_display(int indentation) {
   printf_indented(indentation+2, " 1 2 3 4 5 6 7 8\n");
   printf_indented(indentation+2, "┌─┬─┬─┬─┬─┬─┬─┬─┐\n");
@@ -51,6 +50,7 @@ void board_display(int indentation) {
   }
 }
 
+// Determine if a move is valid
 bool valid_move(int x1, int y1, int x2, int y2, int turn) {
   if(x1 < 0 || x1 > 7 || y1 < 0 || y1 > 7) return false;
   if(x2 < 0 || x2 > 7 || y2 < 0 || y2 > 7) return false;
@@ -87,6 +87,7 @@ bool valid_move(int x1, int y1, int x2, int y2, int turn) {
   return true;
 }
 
+// Perform a move, capture piece if jumped
 void move(int x1, int y1, int x2, int y2) {
   board[y2][x2] = board[y1][x1];
   board[y1][x1] = EMPTY;
@@ -94,6 +95,7 @@ void move(int x1, int y1, int x2, int y2) {
     board[(y2+y1)/2][(x2+x1)/2] = EMPTY;
 }
 
+// Count the pieces each player has on board
 void board_score(int *white_score, int *black_score) {
   *white_score = *black_score = 0;
 
@@ -106,6 +108,7 @@ void board_score(int *white_score, int *black_score) {
   }
 }
 
+// Return a line of input, it's a static char* so don't free it
 char *getinput(FILE *f) {
   static char *buf = NULL;
   static int buflen = 0;
@@ -138,6 +141,7 @@ char *getinput(FILE *f) {
   return buf;
 }
 
+// Play a game, return when there's a winner
 void play_game() {
   board_init();
 
@@ -166,6 +170,10 @@ void play_game() {
     }
 
     move(x1, y1, x2, y2);
+    if(turn == WHITE && y2 == 7)
+      board[y2][x2] = WHITE_KING;
+    else if(turn == BLACK && y2 == 0)
+      board[y2][x2] = BLACK_KING;
 
     int white_score, black_score;
     board_score(&white_score, &black_score);
