@@ -10,6 +10,7 @@
 //
 #define BOARD_WIDTH  8
 #define BOARD_HEIGHT 8
+#define NUM_PLAYERS  2
 
 
 //
@@ -29,26 +30,21 @@ struct {
 //
 // Player definitions
 //
-typedef struct {
+struct {
   const char *name; // Name of the player
   char piece;       // Piece graphic
   int king_row;     // Which row kings this player's piece
   int dir;          // Which y direction can normal pieces go
   int min_rank;     // Which row does this player's pieces start
   int max_rank;     // Which rows does this player's pieces end
-} Player;
-
-Player players[] = {
+} players[NUM_PLAYERS] = {
   {.name="White", .piece='w', .king_row=7, .dir=1,  .min_rank=0, .max_rank=2},
   {.name="Black", .piece='b', .king_row=0, .dir=-1, .min_rank=5, .max_rank=7}
 };
 
-#define NUM_PLAYERS (sizeof(players)/sizeof(players[0]))
-  
 
 //
 // Board functions
-//
 //
 // Live squares are the black squares
 // Pieces may only legally be on live squares
