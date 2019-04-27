@@ -38,8 +38,22 @@ struct {
   int min_rank;     // Which row does this player's pieces start
   int max_rank;     // Which rows does this player's pieces end
 } players[NUM_PLAYERS] = {
-  {.name="White", .piece='w', .king_row=7, .dir=1,  .min_rank=0, .max_rank=2},
-  {.name="Black", .piece='b', .king_row=0, .dir=-1, .min_rank=5, .max_rank=7}
+  {
+    .name="White",
+    .piece='w',
+    .king_row=BOARD_HEIGHT-1,
+    .dir=1,
+    .min_rank=0,
+    .max_rank=2
+  },
+  {
+    .name="Black",
+    .piece='b',
+    .king_row=0,
+    .dir=-1,
+    .min_rank=BOARD_HEIGHT-3,
+    .max_rank=BOARD_HEIGHT-1
+  }
 };
 
 
@@ -119,29 +133,52 @@ void board_init() {
 
 // Display the board
 void board_display() {
-  printf("   1 2 3 4 5 6 7 8\n");
-  printf("  ┌─┬─┬─┬─┬─┬─┬─┬─┐\n");
+  // Top coordinates
+  printf("   ");
+  for(int i = 0; i < BOARD_WIDTH; i++)
+    printf("%2d  ", i+1);
+  printf("\n");
 
-  for(int y = 0; y < 8; y++) {
-    printf("%1d │", y+1);
+  // Top line characters
+  printf("  ┌");
+  for(int i = 0; i < BOARD_WIDTH; i++) {
+    printf("───");
+    printf(i != BOARD_WIDTH-1 ? "┬" : "┐");
+  }
+  printf("\n");
 
-    for(int x = 0; x < 8; x++) {
+  // Rows of pieces
+  for(int y = 0; y < BOARD_HEIGHT; y++) {
+    printf("%2d│", y+1);
+
+    for(int x = 0; x < BOARD_WIDTH; x++) {
       if(has_piece(x, y)) {
         Piece p;
         get_piece(x, y, &p);
         char c = players[p.player].piece;
         if(p.king) c = toupper(c);
-        printf("%c│", c);
+        printf(" %c │", c);
       } else {
-        printf(" │");
+        printf("   │");
       }
     }
-
     printf("\n");
-    if(y != 7)
-      printf("  ├─┼─┼─┼─┼─┼─┼─┼─┤\n");
-    else
-      printf("  └─┴─┴─┴─┴─┴─┴─┴─┘\n");
+
+    // Separator or bottom border
+    if(y != BOARD_HEIGHT-1) {
+      printf("  ├");
+      for(int i = 0; i < BOARD_WIDTH; i++) {
+        printf("───");
+        printf(i == BOARD_WIDTH-1 ? "┤" : "┼");
+      }
+    } else {
+      printf("  └");
+      for(int i = 0; i < BOARD_WIDTH; i++) {
+        printf("───");
+        printf(i == BOARD_WIDTH-1 ? "┘" : "┴");
+      }
+    }
+    printf("\n");
   }
 }
 
@@ -153,8 +190,8 @@ int sign(int x) {
 // Determine if a move is valid
 bool valid_move(int x1, int y1, int x2, int y2, int pl) {
   // Off the board
-  if(x1 < 0 || x1 > 7 || y1 < 0 || y1 > 7) return false;
-  if(x2 < 0 || x2 > 7 || y2 < 0 || y2 > 7) return false;
+  if(x1 < 0 || x1 >= BOARD_HEIGHT || y1 < 0 || y1 >= BOARD_HEIGHT) return false;
+  if(x2 < 0 || x2 >= BOARD_WIDTH || y2 < 0 || y2 >= BOARD_WIDTH) return false;
 
   // Dead square
   if(!is_live(x1,y1) || !is_live(x2,y2)) return false;
@@ -203,7 +240,8 @@ bool valid_move(int x1, int y1, int x2, int y2, int pl) {
 
 // Perform a move, capture piece if jumped
 // This assumes the move is valid
-void move(int x1, int y1, int x2, int y2) {
+// Returns true if move captured a piece
+bool move(int x1, int y1, int x2, int y2) {
   Piece p;
   get_piece(x1, y1, &p);
   remove_piece(x1, y1);
@@ -213,7 +251,10 @@ void move(int x1, int y1, int x2, int y2) {
     int midx = x1 + sign(x2-x1);
     int midy = y1 + sign(y2-y1);
     remove_piece(midx, midy);
+    return true;
   }
+  
+  return false;
 }
 
 // Calculate score for each player
@@ -315,11 +356,12 @@ void play_game() {
       continue;
     }
 
-    move(x1, y1, x2, y2);
+    bool captured = move(x1, y1, x2, y2);
     if(y2 == players[current_player].king_row)
       promote_piece(x2, y2);
 
-    current_player = (current_player+1) % NUM_PLAYERS;
+    if(!captured)
+      current_player = (current_player+1) % NUM_PLAYERS;
   }
 }
 
