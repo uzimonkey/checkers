@@ -11,10 +11,6 @@
 #define BOARD_WIDTH  8
 #define BOARD_HEIGHT 8
 
-// Live squares are the black squares
-// Pieces may only legally be on live squares
-#define IS_LIVE(x,y) ((x)%2 != (y)%2)
-
 
 //
 // Piece and board types and data
@@ -24,13 +20,10 @@ typedef struct {
   bool king;   // Is the piece a king?
 } Piece;
 
-typedef struct {
-  bool live;      // Is this a live square?
+struct {
   bool has_piece; // Does this square have a piece?
   Piece piece;    // Which piece is on this square?
-} Square;
-
-Square board[BOARD_HEIGHT][BOARD_WIDTH];
+} board[BOARD_HEIGHT][BOARD_WIDTH];
 
 
 //
@@ -56,10 +49,17 @@ Player players[] = {
 //
 // Board functions
 //
+//
+// Live squares are the black squares
+// Pieces may only legally be on live squares
+bool is_live(int x, int y) {
+  return x%2 != y%2;
+}
+
 // Put a piece on the board
 bool place_piece(int x, int y, Piece p) {
   if(x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) return false;
-  if(!board[y][x].live) return false;
+  if(!is_live(x,y)) return false;
   if(board[y][x].has_piece) return false;
 
   board[y][x].has_piece = true;
@@ -70,7 +70,7 @@ bool place_piece(int x, int y, Piece p) {
 // Remove a piece from the board
 bool remove_piece(int x, int y) {
   if(x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) return false;
-  if(!board[y][x].live) return false;
+  if(!is_live(x,y)) return false;
   if(!board[y][x].has_piece) return false;
 
   board[y][x].has_piece = false;
@@ -80,7 +80,7 @@ bool remove_piece(int x, int y) {
 // Does this square have a piece?
 bool has_piece(int x, int y) {
   if(x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) return false;
-  if(!board[y][x].live) return false;
+  if(!is_live(x,y)) return false;
   return board[y][x].has_piece;
 }
 
@@ -111,8 +111,8 @@ bool promote_piece(int x, int y) {
 void board_init() {
   for(int y = 0; y < BOARD_HEIGHT; y++) {
     for(int x = 0; x < BOARD_WIDTH; x++) {
-      board[y][x] = (Square){.live=IS_LIVE(x,y), .has_piece=false};
-      if(!IS_LIVE(x,y)) continue;
+      board[y][x].has_piece = false;
+      if(!is_live(x,y)) continue;
 
       for(int pl = 0; pl < NUM_PLAYERS; pl++)
         if(y >= players[pl].min_rank && y <= players[pl].max_rank)
@@ -170,7 +170,7 @@ bool valid_move(int x1, int y1, int x2, int y2, int pl) {
   if(x2 < 0 || x2 > 7 || y2 < 0 || y2 > 7) return false;
 
   // Dead square
-  if(!IS_LIVE(x1,y1) || !IS_LIVE(x2,y2)) return false;
+  if(!is_live(x1,y1) || !is_live(x2,y2)) return false;
 
   // Not a diagonal
   if(abs(x1-x2) != abs(y1-y2)) return false;
