@@ -216,15 +216,23 @@ void move(int x1, int y1, int x2, int y2) {
   }
 }
 
-// Count the pieces each player has on board
-void update_player_score() {
-//  for(int y = 0; y < 7; y++) {
-//    for(int x = 0; x < y; x++) {
-//      int p = board[y][x];
-//      for(int i = 0; i < NUM_PLAYERS; i++)
-//        players[i].score += tolower(p) == players[i].piece;
-//    }
-//  }
+// Calculate score for each player
+// Assumes scores[] has as many elements as players
+void get_scores(int scores[]) {
+  for(int pl = 0; pl < NUM_PLAYERS; pl++)
+    scores[pl] = 0;
+
+  for(int y = 0; y < 7; y++) {
+    for(int x = 0; x < y; x++) {
+      Piece p;
+      if(get_piece(x, y, &p))
+        scores[p.player]++;
+    }
+  }
+
+  int max_score = (players[0].max_rank - players[0].min_rank) * (BOARD_WIDTH/2);
+  for(int pl = 0; pl < NUM_PLAYERS; pl++)
+    scores[pl] = max_score - scores[pl];
 }
 
 // Return a line of input, it's a static char* so don't free it
@@ -262,9 +270,8 @@ char *getinput(FILE *f) {
 
 // Play a game, return when there's a winner
 void play_game() {
+  int scores[NUM_PLAYERS] = {0};
   board_init();
-  // for(int i = 0; i < NUM_PLAYERS; i++)
-  //   players[i].score = 0;
 
   int turn = 0;
   while(1) {
@@ -294,12 +301,13 @@ void play_game() {
     if(y2 == players[turn].king_row)
       promote_piece(x2, y2);
 
-    update_player_score();
-    // for(int i = 0; i < NUM_PLAYERS; i++)
-    //   if(players[i].score == 0) {
-    //     printf("%s loses!\n", players[i].name);
-    //     return;
-    //   }
+    get_scores(scores);
+    for(int pl = 0; pl < NUM_PLAYERS; pl++) {
+      if(scores[pl] == 0) {
+        printf("%s loses!\n", players[pl].name);
+        return;
+      }
+    }
 
     turn = (turn+1) % NUM_PLAYERS;
   }
