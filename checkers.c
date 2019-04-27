@@ -117,22 +117,13 @@ void board_init() {
   } // for y
 }
 
-// Print indented string
-void printf_indented(int indentation, const char *fmt, ...) {
-  while(indentation--) printf(" ");
-
-  va_list args;
-  va_start(args, fmt);
-  vprintf(fmt, args);
-}
-
 // Display the board
-void board_display(int indentation) {
-  printf_indented(indentation+2, " 1 2 3 4 5 6 7 8\n");
-  printf_indented(indentation+2, "┌─┬─┬─┬─┬─┬─┬─┬─┐\n");
+void board_display() {
+  printf("   1 2 3 4 5 6 7 8\n");
+  printf("  ┌─┬─┬─┬─┬─┬─┬─┬─┐\n");
 
   for(int y = 0; y < 8; y++) {
-    printf_indented(indentation, "%1d │", y+1);
+    printf("%1d │", y+1);
 
     for(int x = 0; x < 8; x++) {
       if(has_piece(x, y)) {
@@ -148,9 +139,9 @@ void board_display(int indentation) {
 
     printf("\n");
     if(y != 7)
-      printf_indented(indentation+2, "├─┼─┼─┼─┼─┼─┼─┼─┤\n");
+      printf("  ├─┼─┼─┼─┼─┼─┼─┼─┤\n");
     else
-      printf_indented(indentation+2, "└─┴─┴─┴─┴─┴─┴─┴─┘\n");
+      printf("  └─┴─┴─┴─┴─┴─┴─┴─┘\n");
   }
 }
 
@@ -277,7 +268,7 @@ void play_game() {
 
   int turn = 0;
   while(1) {
-    board_display(4);
+    board_display();
 
     printf("%s, it is your turn.\n", players[turn].name);
     printf("Enter move: ");
