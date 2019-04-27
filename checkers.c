@@ -273,11 +273,28 @@ void play_game() {
   int scores[NUM_PLAYERS] = {0};
   board_init();
 
-  int turn = 0;
+  int current_player = 0;
   while(1) {
+    get_scores(scores);
+
+    // End game if only one player is left
+    int players_left = 0;
+    int high_score = 0;
+    for(int pl = 0; pl < NUM_PLAYERS; pl++) {
+      if(scores[pl] == 0) continue;
+      players_left++;
+      if(scores[pl] > scores[high_score]) high_score = pl;
+    }
+
+    if(players_left == 1) {
+      printf("%s wins!\n", players[high_score].name);
+      return;
+    }
+
+    // Display and get input
     board_display();
 
-    printf("%s, it is your turn.\n", players[turn].name);
+    printf("%s, it is your turn.\n", players[current_player].name);
     printf("Enter move: ");
     char *line = getinput(stdin);
     int x1, x2, y1, y2;
@@ -292,24 +309,17 @@ void play_game() {
     x2--;
     y2--;
 
-    if(!valid_move(x1, y1, x2, y2, turn)) {
+    // Validate and perform move
+    if(!valid_move(x1, y1, x2, y2, current_player)) {
       printf("Invalid move\n");
       continue;
     }
 
     move(x1, y1, x2, y2);
-    if(y2 == players[turn].king_row)
+    if(y2 == players[current_player].king_row)
       promote_piece(x2, y2);
 
-    get_scores(scores);
-    for(int pl = 0; pl < NUM_PLAYERS; pl++) {
-      if(scores[pl] == 0) {
-        printf("%s loses!\n", players[pl].name);
-        return;
-      }
-    }
-
-    turn = (turn+1) % NUM_PLAYERS;
+    current_player = (current_player+1) % NUM_PLAYERS;
   }
 }
 
