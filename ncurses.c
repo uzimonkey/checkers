@@ -30,7 +30,47 @@ short player_colors[NUM_PLAYERS] = {
 WINDOW *board_window;
 WINDOW *status_window;
 
-void play_game(void) {
+// Return the screen sx,sy given board x,y
+bool board_to_screen(int x, int y, int *sx, int *sy) {
+  if(x < 0 || x >= BOARD_WIDTH || y < 0 || y > BOARD_WIDTH)
+    return false;
+  *sx = x * SQUARE_WIDTH;
+  *sy = y * SQUARE_HEIGHT;
+  return true;
+}
+
+// Return the board x,y given screen sx,sy
+bool screen_to_board(int x, int y, int *bx, int *by) {
+  int begx, begy;
+  int maxx, maxy;
+  getbegyx(board_window, begy, begx);
+  getmaxyx(board_window, maxy, maxx);
+
+  if(x < begx || x >= begx+maxx || y < begy || y >= begy+maxy)
+    return false;
+
+  *bx = (x - begx) / SQUARE_WIDTH;
+  *by = (y - begy) / SQUARE_HEIGHT;
+  return true;
+}
+
+// Return a board x,y of a mouse click
+bool get_board_click(int *x, int *y) {
+  for(int ch; ch=getch(), ch != EOF;) {
+    if(ch == KEY_MOUSE) {
+      MEVENT event;
+      getmouse(&event);
+
+      int board_x, board_y;
+      if(screen_to_board(event.x, event.y, &board_x, &board_y)) {
+        *x = board_x;
+        *y = board_y;
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 // Initialize ncurses and create windows
@@ -41,7 +81,7 @@ void init_ncurses(void) {
   use_default_colors();
   assume_default_colors(-1,-1);
 
-  raw();
+  cbreak();
   keypad(stdscr, TRUE);
   noecho();
   mousemask(BUTTON1_PRESSED, NULL);
@@ -86,9 +126,13 @@ void init_ncurses(void) {
 }
 
 // Draw checkers square with piece
-void draw_checkers_square(int x, int y, int color, char piece) {
+void draw_square(int x, int y, int color, char piece) {
+  int sx, sy;
+  if(!board_to_screen(x, y, &sx, &sy))
+    return;
+
   for(int dy = 0; dy < SQUARE_HEIGHT; dy++) {
-    wmove(board_window, y*SQUARE_HEIGHT+dy, x*SQUARE_WIDTH);
+    wmove(board_window, sy, sx);
     for(int dx = 0; dx < SQUARE_WIDTH; dx++) {
       char ch = (dx == SQUARE_WIDTH/2 && dy == SQUARE_HEIGHT/2) ? piece : ' ';
       waddch(board_window, color | ch);
@@ -97,18 +141,18 @@ void draw_checkers_square(int x, int y, int color, char piece) {
 }
 
 // Draw checkers board
-void draw_checkers_board() {
+void draw_board() {
   for(int y = 0; y < BOARD_HEIGHT; y++) 
     for(int x = 0; x < BOARD_WIDTH; x++) {
       Piece p;
       if(get_piece(x, y, &p)) {
-        draw_checkers_square(
+        draw_square(
             x, y,
             COLOR_PAIR(PAIR_PLAYER_START + p.player),
             p.king ? PIECE_KING : PIECE_NORMAL 
         );
       } else {
-        draw_checkers_square(
+        draw_square(
             x, y,
             COLOR_PAIR(is_live(x,y) ? PAIR_EMPTY_DARK : PAIR_EMPTY_LIGHT),
             ' '
@@ -119,13 +163,26 @@ void draw_checkers_board() {
   wrefresh(board_window);
 }
 
+void play_game(void) {
+}
+
 int main(void) {
   init_ncurses();
   board_init();
-  draw_checkers_board();
+  draw_board();
   mvwprintw(status_window, 0, 0, "It works!");
   wrefresh(status_window);
-  getch();
+
+  while(1) {
+    int x, y;
+    if(get_board_click(&x, &y)) {
+      remove_piece(x, y);
+      draw_board();
+      wrefresh(board_window);
+    } else {
+      break;
+    }
+  };
 
   //play_game();
 
