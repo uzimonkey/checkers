@@ -11,17 +11,20 @@
 #define BOARD_WINDOW_WIDTH  ((SQUARE_WIDTH) * (BOARD_WIDTH))
 #define BOARD_WINDOW_HEIGHT ((SQUARE_HEIGHT) * (BOARD_HEIGHT))
 
-#define LIGHT_COLOR COLOR_RED
-#define DARK_COLOR  COLOR_BLACK
+#define LIGHT_COLOR COLOR_WHITE
+#define DARK_COLOR  COLOR_GREEN
 
 #define PAIR_EMPTY_LIGHT  10
 #define PAIR_EMPTY_DARK   11
 #define PAIR_PLAYER_START 12
 
+#define PIECE_NORMAL 'o'
+#define PIECE_KING   '*'
+
 // Foreground color of players
 short player_colors[NUM_PLAYERS] = {
   COLOR_WHITE,
-  COLOR_RED
+  COLOR_BLACK
 };
 
 WINDOW *board_window;
@@ -32,11 +35,12 @@ void play_game(void) {
 
 // Initialize ncurses and create windows
 void init_ncurses(void) {
-  // Initialize ncurses
   initscr();
+
   start_color();
   use_default_colors();
   assume_default_colors(-1,-1);
+
   raw();
   keypad(stdscr, TRUE);
   noecho();
@@ -82,47 +86,35 @@ void init_ncurses(void) {
 }
 
 // Draw checkers square with piece
-void draw_checkers_square_with_piece(int x, int y, Piece p) {
-  char graphic = p.king ? '*' : 'o';
-  int pair = PAIR_PLAYER_START + p.player;
-
+void draw_checkers_square(int x, int y, int color, char piece) {
   for(int dy = 0; dy < SQUARE_HEIGHT; dy++) {
     wmove(board_window, y*SQUARE_HEIGHT+dy, x*SQUARE_WIDTH);
     for(int dx = 0; dx < SQUARE_WIDTH; dx++) {
-      char ch = ' ';
-      if(dx == SQUARE_WIDTH/2 && dy == SQUARE_HEIGHT/2)
-        ch = graphic;
-      waddch(board_window, COLOR_PAIR(pair) | ch);
+      char ch = (dx == SQUARE_WIDTH/2 && dy == SQUARE_HEIGHT/2) ? piece : ' ';
+      waddch(board_window, color | ch);
     }
   }
 }
 
-// Draw checkers square without piece
-void draw_checkers_square_without_piece(int x, int y) {
-  int pair = is_live(x,y) ? PAIR_EMPTY_DARK : PAIR_EMPTY_LIGHT;
-
-  for(int dy = 0; dy < SQUARE_HEIGHT; dy++) {
-    wmove(board_window, y*SQUARE_HEIGHT+dy, x*SQUARE_WIDTH);
-    for(int dx = 0; dx < SQUARE_WIDTH; dx++)
-      waddch(board_window, COLOR_PAIR(pair) | ' ');
-  }
-}
-
-// Look up piece on board and draw checkers square
-void draw_checkers_square(int x, int y) {
-  Piece p;
-  if(get_piece(x, y, &p))
-    draw_checkers_square_with_piece(x, y, p);
-  else
-    draw_checkers_square_without_piece(x, y);
-}
-
-
 // Draw checkers board
 void draw_checkers_board() {
   for(int y = 0; y < BOARD_HEIGHT; y++) 
-    for(int x = 0; x < BOARD_WIDTH; x++)
-      draw_checkers_square(x, y);
+    for(int x = 0; x < BOARD_WIDTH; x++) {
+      Piece p;
+      if(get_piece(x, y, &p)) {
+        draw_checkers_square(
+            x, y,
+            COLOR_PAIR(PAIR_PLAYER_START + p.player),
+            p.king ? PIECE_KING : PIECE_NORMAL 
+        );
+      } else {
+        draw_checkers_square(
+            x, y,
+            COLOR_PAIR(is_live(x,y) ? PAIR_EMPTY_DARK : PAIR_EMPTY_LIGHT),
+            ' '
+        );
+      }
+    }
 
   wrefresh(board_window);
 }
